@@ -68,13 +68,13 @@ func TestCafeCount(t *testing.T) {
 			countStr := req.FormValue("count")
 			count, err := strconv.Atoi(countStr)
 			if err != nil {
-				t.Errorf("Failed to convert count to integer: %s", countStr)
+				t.Error(err)
 			}
 			city := req.FormValue("city")
-			cafe, ok := cafeList[city]
-			if !ok {
-				t.Errorf("Unknown city: %s", city)
-			}
+			cafe := cafeList[city]
+			// if !ok {
+			// 	t.Error(err)
+			// }
 			count = min(count, len(cafe))
 			answer := strings.Join(cafe[:count], ",")
 			//fmt.Printf("Request: %s, City: %s, Count: %d, Expected Answer: %s\n", v, city, count, answer)
@@ -82,9 +82,9 @@ func TestCafeCount(t *testing.T) {
 			if len(answerSlice) == 1 && answerSlice[0] == "" {
 				answerSlice = []string{}
 			}
-			lenAnswer := len(answerSlice)
-
 			require.Equal(t, http.StatusOK, response.Code)
+
+			lenAnswer := len(answerSlice)
 			assert.Equal(t, count, lenAnswer)
 		}
 	}

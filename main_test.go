@@ -114,7 +114,10 @@ func TestCafeSearch(t *testing.T) {
 		body := response.Body.String()
 		var count int
 		if body != "" {
-			count = len(strings.Split(body, ","))
+			body = strings.ToLower(body)
+			body = strings.TrimSpace(body)
+			cafes := strings.Split(body, ",")
+			count = len(cafes)
 		}
 
 		assert.Equal(t, r.wantCount, count)

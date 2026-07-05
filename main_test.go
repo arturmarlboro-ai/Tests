@@ -53,56 +53,37 @@ func TestCafeWhenOk(t *testing.T) {
 }
 func TestCafeCount(t *testing.T) {
 	handler := http.HandlerFunc(mainHandle)
-	//
+
 	requests := []struct {
-		count int // передаваемое значение count
-		want  int // ожидаемое количество кафе в ответе
+		count  int // передаваемое значение count
+		want   int // ожидаемое количество кафе в ответе
+		cities []string
 	}{
-		{count: 0, want: 0},
-		{count: 1, want: 1},
-		{count: 2, want: 2},
-		{count: 100, want: 5}, // в Москве 5 кафе
+		{count: 0, want: 0, cities: []string{"moscow", "tula"}},
+		{count: 1, want: 1, cities: []string{"moscow", "tula"}},
+		{count: 2, want: 2, cities: []string{"moscow", "tula"}},
+		{count: 100, want: min(len(cafeList["moscow"]), 100), cities: []string{"moscow"}}, // в Москве 5 кафе
 	}
 
-	cities := []string{"moscow", "tula"}
 	for _, v := range requests {
-		for _, c := range cities {
+		for _, c := range v.cities {
 			params := url.Values{}
-			if v.count == 0 {
-				params.Set("count", "0")
-			}
 			params.Set("count", strconv.Itoa(v.count))
-			if c != "" {
-				params.Set("city", c)
-			}
+			params.Set("city", c)
 
 			req := httptest.NewRequest("GET", "/cafe?"+params.Encode(), nil)
 			response := httptest.NewRecorder()
 
 			handler.ServeHTTP(response, req)
 
-			countStr := req.FormValue("count")
-			count, err := strconv.Atoi(countStr)
-			if err != nil {
-				t.Error(err)
-			}
-			city := req.FormValue("city")
-			cafes := cafeList[city]
-
-			count = min(count, len(cafes))
-			answer := strings.Join(cafes[:count], ",")
-
-			answerSlice := strings.Split(answer, ",")
-
-			if len(answerSlice) == 1 && answerSlice[0] == "" {
-				answerSlice = []string{}
-			}
-			lenAnswer := len(answerSlice)
-			if city == "tula" && v.count == 100 {
-				v.want = 3
-			}
 			require.Equal(t, http.StatusOK, response.Code)
-			assert.Equal(t, v.want, lenAnswer)
+
+			body := response.Body.String()
+			var count int
+			if body != "" {
+				count = len(strings.Split(body, ","))
+			}
+			assert.Equal(t, v.want, count)
 		}
 	}
 }
@@ -128,18 +109,15 @@ func TestCafeSearch(t *testing.T) {
 
 		handler.ServeHTTP(response, req)
 
-		city := req.FormValue("city")
-		search := req.FormValue("search")
-		cafes := cafeList[city]
-		var found []string
-		for _, cafe := range cafes {
-			cafe = strings.ToLower(cafe)
-			if strings.Contains(cafe, search) {
-				found = append(found, cafe)
-			}
-		}
 		require.Equal(t, http.StatusOK, response.Code)
-		assert.Equal(t, r.wantCount, len(found))
+
+		body := response.Body.String()
+		var count int
+		if body != "" {
+			count = len(strings.Split(body, ","))
+		}
+
+		assert.Equal(t, r.wantCount, count)
 	}
 
 }

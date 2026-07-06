@@ -55,36 +55,39 @@ func TestCafeCount(t *testing.T) {
 	handler := http.HandlerFunc(mainHandle)
 
 	requests := []struct {
-		count  int // передаваемое значение count
-		want   int // ожидаемое количество кафе в ответе
-		cities []string
+		count int // передаваемое значение count
+		want  int // ожидаемое количество кафе в ответе
+		city  string
 	}{
-		{count: 0, want: 0, cities: []string{"moscow", "tula"}},
-		{count: 1, want: 1, cities: []string{"moscow", "tula"}},
-		{count: 2, want: 2, cities: []string{"moscow", "tula"}},
-		{count: 100, want: min(len(cafeList["moscow"]), 100), cities: []string{"moscow"}}, // в Москве 5 кафе
+		{count: 0, want: 0, city: "tula"},
+		{count: 1, want: 1, city: "tula"},
+		{count: 2, want: 2, city: "tula"},
+		{count: 0, want: 0, city: "moscow"},
+		{count: 1, want: 1, city: "moscow"},
+		{count: 2, want: 2, city: "moscow"},
+		{count: 100, want: min(len(cafeList["moscow"]), 100), city: "moscow"}, // в Москве 5 кафе
 	}
 
 	for _, v := range requests {
-		for _, c := range v.cities {
-			params := url.Values{}
-			params.Set("count", strconv.Itoa(v.count))
-			params.Set("city", c)
 
-			req := httptest.NewRequest("GET", "/cafe?"+params.Encode(), nil)
-			response := httptest.NewRecorder()
+		params := url.Values{}
+		params.Set("count", strconv.Itoa(v.count))
+		params.Set("city", v.city)
 
-			handler.ServeHTTP(response, req)
+		req := httptest.NewRequest("GET", "/cafe?"+params.Encode(), nil)
+		response := httptest.NewRecorder()
 
-			require.Equal(t, http.StatusOK, response.Code)
+		handler.ServeHTTP(response, req)
 
-			body := response.Body.String()
-			var count int
-			if body != "" {
-				count = len(strings.Split(body, ","))
-			}
-			assert.Equal(t, v.want, count)
+		require.Equal(t, http.StatusOK, response.Code)
+
+		body := response.Body.String()
+		var count int
+		if body != "" {
+			count = len(strings.Split(body, ","))
 		}
+		assert.Equal(t, v.want, count)
+
 	}
 }
 func TestCafeSearch(t *testing.T) {
@@ -118,6 +121,12 @@ func TestCafeSearch(t *testing.T) {
 			body = strings.TrimSpace(body)
 			cafes := strings.Split(body, ",")
 			count = len(cafes)
+			//fmt.Println("cafes:", cafes, "search:", r.search)
+			//break
+			for _, cafe := range cafes {
+				assert.Contains(t, cafe, r.search)
+			}
+			//assert.Contains(t, cafes, r.search)
 		}
 
 		assert.Equal(t, r.wantCount, count)
